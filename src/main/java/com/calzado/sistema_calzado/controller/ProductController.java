@@ -132,4 +132,20 @@ public class ProductController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    // Agregar estos métodos al ProductController.java
+
+    // Obtener materiales
+    @GetMapping("/materials")
+    public ResponseEntity<List<String>> getAllMaterials() {
+        List<String> materials = productService.getAllMaterials();
+        return ResponseEntity.ok(materials);
+    }
+
+    // Obtener colores
+    @GetMapping("/colors")
+    public ResponseEntity<List<String>> getAllColors() {
+        List<String> colors = productService.getAllColors();
+        return ResponseEntity.ok(colors);
+    }
 }

@@ -1,6 +1,7 @@
 package com.calzado.sistema_calzado.service.impl;
 
 import com.calzado.sistema_calzado.dto.request.SaleItemRequest;
+import com.calzado.sistema_calzado.dto.request.SalePaymentRequest;
 import com.calzado.sistema_calzado.dto.request.SaleRequest;
 import com.calzado.sistema_calzado.dto.response.SaleResponse;
 import com.calzado.sistema_calzado.model.*;
@@ -29,6 +30,9 @@ public class SaleServiceImpl implements SaleService {
     private SaleItemRepository saleItemRepository;
 
     @Autowired
+    private SalePaymentRepository salePaymentRepository;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -49,7 +53,6 @@ public class SaleServiceImpl implements SaleService {
         sale.setCustomerName(request.getCustomerName());
         sale.setCustomerDocument(request.getCustomerDocument());
         sale.setCustomerPhone(request.getCustomerPhone());
-        sale.setPaymentMethod(request.getPaymentMethod());
         sale.setDiscount(request.getDiscount());
         sale.setTax(request.getTax());
         sale.setNotes(request.getNotes());
@@ -101,6 +104,48 @@ public class SaleServiceImpl implements SaleService {
 
         // Calcular totales
         sale.calculateTotals();
+
+        // ========== PROCESAMIENTO DE PAGOS ==========
+        if (request.getPayments() != null && !request.getPayments().isEmpty()) {
+            // NUEVO: Pagos múltiples
+            BigDecimal totalPayments = BigDecimal.ZERO;
+
+            for (SalePaymentRequest paymentRequest : request.getPayments()) {
+                SalePayment payment = new SalePayment();
+                payment.setPaymentMethod(paymentRequest.getPaymentMethod());
+                payment.setAmount(paymentRequest.getAmount());
+                payment.setReferenceNumber(paymentRequest.getReferenceNumber());
+                payment.setNotes(paymentRequest.getNotes());
+
+                sale.addPayment(payment);
+                totalPayments = totalPayments.add(paymentRequest.getAmount());
+            }
+
+            // Validar que los pagos cubran el total
+            if (totalPayments.compareTo(sale.getTotal()) < 0) {
+                throw new IllegalArgumentException(
+                        "Los pagos no cubren el total. Total: " + sale.getTotal() + ", Pagos: " + totalPayments);
+            }
+
+            // Si hay más de un pago, marcar como MIXED en el campo legacy
+            if (request.getPayments().size() > 1) {
+                sale.setPaymentMethod(PaymentMethod.MIXED);
+            } else {
+                sale.setPaymentMethod(request.getPayments().get(0).getPaymentMethod());
+            }
+
+        } else if (request.getPaymentMethod() != null) {
+            // LEGACY: Soporte para llamadas antiguas con un solo método
+            sale.setPaymentMethod(request.getPaymentMethod());
+
+            // Crear un pago único
+            SalePayment payment = new SalePayment();
+            payment.setPaymentMethod(request.getPaymentMethod());
+            payment.setAmount(sale.getTotal());
+            sale.addPayment(payment);
+        } else {
+            throw new IllegalArgumentException("Debe especificar al menos un método de pago");
+        }
 
         // Guardar venta
         Sale savedSale = saleRepository.save(sale);

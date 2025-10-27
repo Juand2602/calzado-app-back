@@ -39,4 +39,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.isActive = true ORDER BY p.brand")
     List<String> findAllBrands();
+
+    // Agregar estos métodos a la interfaz ProductRepository.java
+
+    @Query("SELECT DISTINCT p.material FROM Product p WHERE p.isActive = true ORDER BY p.material")
+    List<String> findAllMaterials();
+
+    @Query("SELECT DISTINCT p.color FROM Product p WHERE p.isActive = true ORDER BY p.color")
+    List<String> findAllColors();
 }

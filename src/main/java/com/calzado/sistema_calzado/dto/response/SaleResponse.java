@@ -30,7 +30,10 @@ public class SaleResponse {
     private BigDecimal discount;
     private BigDecimal tax;
     private BigDecimal total;
+
+    // CAMPO DEPRECADO - Mantener para compatibilidad
     private PaymentMethod paymentMethod;
+
     private SaleStatus status;
     private String notes;
     private Integer totalItems;
@@ -43,8 +46,14 @@ public class SaleResponse {
 
     private List<SaleItemResponse> items;
 
+    // NUEVA PROPIEDAD: Lista de pagos
+    private List<SalePaymentResponse> payments;
+
+    // Helper para saber si es pago mixto
+    private Boolean isMixedPayment;
+
     public static SaleResponse fromSale(Sale sale) {
-        return SaleResponse.builder()
+        SaleResponse response = SaleResponse.builder()
                 .id(sale.getId())
                 .saleNumber(sale.getSaleNumber())
                 .userName(sale.getUser().getUsername())
@@ -55,7 +64,6 @@ public class SaleResponse {
                 .discount(sale.getDiscount())
                 .tax(sale.getTax())
                 .total(sale.getTotal())
-                .paymentMethod(sale.getPaymentMethod())
                 .status(sale.getStatus())
                 .notes(sale.getNotes())
                 .totalItems(sale.getTotalItems())
@@ -65,5 +73,21 @@ public class SaleResponse {
                         .map(SaleItemResponse::fromSaleItem)
                         .collect(Collectors.toList()))
                 .build();
+
+        // Manejar pagos
+        if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {
+            response.setPayments(sale.getPayments().stream()
+                    .map(SalePaymentResponse::fromSalePayment)
+                    .collect(Collectors.toList()));
+            response.setIsMixedPayment(sale.isMixedPayment());
+            // Para compatibilidad, setear el primer método de pago
+            response.setPaymentMethod(sale.getPayments().get(0).getPaymentMethod());
+        } else {
+            // Datos antiguos sin tabla de pagos
+            response.setPaymentMethod(sale.getPaymentMethod());
+            response.setIsMixedPayment(false);
+        }
+
+        return response;
     }
 }

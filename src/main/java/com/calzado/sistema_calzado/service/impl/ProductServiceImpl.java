@@ -202,4 +202,18 @@ public class ProductServiceImpl implements ProductService {
         product.setIsActive(true);
         productRepository.save(product);
     }
+
+    // Agregar estos métodos a la clase ProductServiceImpl.java
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAllMaterials() {
+        return productRepository.findAllMaterials();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAllColors() {
+        return productRepository.findAllColors();
+    }
 }

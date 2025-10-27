@@ -58,8 +58,9 @@ public class Sale {
     @DecimalMin("0.0")
     private BigDecimal total;
 
+    // CAMPO DEPRECADO - Mantener por compatibilidad con datos antiguos
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method", nullable = false, length = 20)
+    @Column(name = "payment_method", length = 20)
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
@@ -78,6 +79,11 @@ public class Sale {
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<SaleItem> items = new ArrayList<>();
+
+    // NUEVA RELACIÓN: Pagos múltiples
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<SalePayment> payments = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -98,6 +104,11 @@ public class Sale {
         item.setSale(this);
     }
 
+    public void addPayment(SalePayment payment) {
+        payments.add(payment);
+        payment.setSale(this);
+    }
+
     public void calculateTotals() {
         this.subtotal = items.stream()
                 .map(SaleItem::getSubtotal)
@@ -110,5 +121,18 @@ public class Sale {
         return items.stream()
                 .mapToInt(SaleItem::getQuantity)
                 .sum();
+    }
+
+    // Determinar si la venta usa pago mixto
+    public boolean isMixedPayment() {
+        return payments.size() > 1;
+    }
+
+    // Obtener el método de pago principal (para compatibilidad)
+    public PaymentMethod getPrimaryPaymentMethod() {
+        if (payments.isEmpty()) {
+            return paymentMethod; // Datos antiguos
+        }
+        return payments.get(0).getPaymentMethod();
     }
 }

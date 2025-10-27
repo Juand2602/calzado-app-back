@@ -20,4 +20,8 @@ public interface ProductService {
     List<String> getAllBrands();
     void deleteProduct(Long id);
     void activateProduct(Long id);
+    // Agregar estos métodos a la interfaz ProductService.java
+
+    List<String> getAllMaterials();
+    List<String> getAllColors();
 }
